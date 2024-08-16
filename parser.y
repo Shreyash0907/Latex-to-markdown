@@ -1,132 +1,140 @@
-%debug
 %{
-    #include <stdio.h>
-    #include <string.h>
+    #include <string>
     extern int yylineno;
+    std::string* outputStr;
 %}
 
+%code requires {
+    #include <cstdio>
+    #include <string>
+    using namespace std;
+    extern int yylex(void);
+    static void yyerror(const char* s); 
+    std::string* getOutput();
+    int cnt();
+}
+
 %union {
-    char *str;
+     std::string* str;
 }
 
 %type <str> operations
-%type <str> unoitem
-%type <str> oitem
-%type <str> tcontent
-%type <str> codecontent start
+%type <str> unoitem gsentence gsentences 
+%type <str> oitem gdata sentence sentences ospace ospaces 
+%type <str> tcontent tstructure tline tlines 
+%type <str> codecontent start program blocks operationList ostatement
 %token OTHER
 %token LCURB RCURB APER TAB SPACE BSLASH PIPE NEWLINE LSQRB RSQRB
-%token TEXT
+%token <str> TEXT
 %token ITALIC BOLD HREF GRAPHIC
 %token HRULE SECTION PARAGRAPH ITEM SUBSECTION SUBSUBSECTION HLINE
 %token BCBLOCK ECBLOCK
 %token BOLIST EOLIST BUNOLIST EUNOLIST
 %token BTABLE ETABLE
 %token BDOC EDOC
+
+
 %start start
 
 %%
-    start : startingtext start {$$ = ""};
-            | BDOC program EDOC {$$ = $2;};
+    start : startingtext start {};
+            | BDOC program EDOC {outputStr = $2;};
              ;
             
-    program : 
-            | operationList program  {$$ = $1 + $2;}
-           | blocks program          {$$ = $1 + $2;}
+    program :                          {   } 
+            | operationList program  {$$ = new std::string(*$1 + *$2); delete $1; delete $2;}
+            | blocks program         {$$ = new std::string(*$1 + *$2); delete $1; delete $2;}
             ;
-    blocks : BUNOLIST unoitem EUNOLIST 
-            | BOLIST oitem EOLIST 
-            | BTABLE LCURB tstructure RCURB NEWLINE tcontent ETABLE 
-            | BCBLOCK codecontent ECBLOCK 
-            ;
-
-
-    operationList: operations
+    blocks : BUNOLIST unoitem EUNOLIST                  {$$ = $2;}
+            | BOLIST oitem EOLIST                       {$$ = $2;}
+            | BTABLE LCURB tstructure RCURB NEWLINE tcontent ETABLE {$$ = $3;}
+            | BCBLOCK codecontent ECBLOCK {$$ = $2;}
             ;
 
-    operations: sentences {printf("word");}
-              | ITALIC ostatement {printf("italic");}
-              | BOLD ostatement {printf("bold");}
-              | SECTION ostatement {printf("section");}
-              | SUBSECTION ostatement {printf("subsection");}
-              | SUBSUBSECTION ostatement {printf("subsubsection");}
-              | HREF LCURB sentences RCURB ostatement {printf("href");}
-              | HRULE {printf("hrule");}
-              | GRAPHIC gdata ostatement {printf("graphic");}
-              | PARAGRAPH {printf("paragraph");}
+
+    operationList: operations {$$ = $1;}
+            ;
+
+    operations: sentences {$$ = $1;}
+              | ITALIC ostatement {$$ = new std::string("*" + *$2 + "*");}
+              | BOLD ostatement {$$ = new std::string("**" + *$2 + "**");}
+              | SECTION ostatement {$$ = new std::string("# " + *$2+"\n");}
+              | SUBSECTION ostatement {$$ = new std::string("## " + *$2);}
+              | SUBSUBSECTION ostatement {$$ = new std::string("### " + *$2);}
+              | HREF LCURB sentences RCURB ostatement {$$ = new std::string("[" + *$5 + "]" + "(" + *$3 + ")" );}
+              | HRULE {$$ = new std::string("<br>---<br>");}
+              | GRAPHIC gdata ostatement {$$ = new std::string("![" + *$3 + "]{"+ *$2 + "}" );}
+              | PARAGRAPH {$$ = new std::string("<br>");}
               ;
 
-    ostatement : LCURB operations RCURB {printf("ostatement");} 
+    ostatement : LCURB operations RCURB {$$ = new std::string(*$2);} 
 
-    unoitem : ospaces ITEM sentences {printf("unoitem");};
-            | ospaces ITEM sentences unoitem {printf("unoitem");};
+    unoitem : ospaces ITEM sentences {$$ = new std::string("- " + *$1 + *$3 + "<br>");};
+            | ospaces ITEM sentences unoitem {$$ = new std::string("- " + *$1 + *$3 + "<br>" + *$4);};
             ;
 
-    oitem :ospaces ITEM sentences     {printf("oitem");};
-            | ospaces ITEM sentences oitem  {printf("oitem");};
+    oitem :   ospaces ITEM sentences     {$$ = new std::string("1. " + *$1 + *$3 + "<br>");};
+            | ospaces ITEM sentences oitem  {$$ = new std::string("1. " + *$1 + *$3 + "<br>" + *$4);};
             ;
 
-    tstructure : 
-               | PIPE tstructure
-               | TEXT tstructure
+    tstructure :        {}
+               | PIPE tstructure {$$ = new std::string("|" + *$2);};
+               | TEXT tstructure {$$ = new std::string(*$1 + *$2);};
                 ;
                
-    tcontent : {printf("tcontent");}
-             | tlines BSLASH BSLASH ospaces tcontent    {printf("tcontent");}
-             | HLINE ospaces tcontent {printf("hline");}
+    tcontent : {}
+             | tlines BSLASH BSLASH ospaces tcontent    {{$$ = new std::string("|" + *$1);};}
+             | HLINE ospaces tcontent {{$$ = new std::string("<br>" + *$2 + *$3);};}
             ;
 
-    tlines : tline
-           | tline tlines
+    tlines : tline  {$$ = new std::string(*$1);};
+           | tline tlines  {$$ = new std::string(*$1 + *$2);};
         ;
 
-    tline : TEXT ospaces
-          | APER ospaces
+    tline : TEXT ospaces {$$ = new std::string(*$1 + *$2);};
+          | APER ospaces {$$ = new std::string("|" + *$2);};
           ;
 
-    gdata : 
-            | LSQRB gsentences RSQRB 
+    gdata :  {}
+            | LSQRB gsentences RSQRB {$$ = new std::string( *$2 );};
 
-    codecontent : sentences  {printf("codecontent");};
-    startingtext : TEXT 
+    codecontent : sentences  {$$ = new std::string(*$1);};
+    startingtext : TEXT {}
 
-    sentences : sentence 
-                | sentence sentences;
+    sentences : sentence {$$ = new std::string(*$1);};
+                | sentence sentences {$$ = new std::string(*$1 + *$2);};
+                ; 
 
-    ospace : SPACE                  {$$ = yyval.text}
-            | NEWLINE
+    ospace : SPACE   {$$ = new std::string(" ");};
+            | NEWLINE  {$$ = new std::string("\n");};
             ;
 
-    ospaces : 
-            | ospaces ospace
+    ospaces :   {$$ = new std::string("");};
+            | ospaces ospace {$$ = new std::string(*$2 + *$1);};
             ;
 
-    gsentences: 
-                | gsentences gsentence
+    gsentences:         {$$ = new std::string("");};
+                | gsentences gsentence {$$ = new std::string(*$2 + *$1);};
                 ;
     
-    gsentence : BSLASH 
-                | sentence
+    gsentence : BSLASH {}
+                | sentence {$$ = $1;}
 
-    sentence : TEXT | ospace;
+    sentence : TEXT {$$ = $1;}
+             | ospace  {$$ = $1;}
+             ;
 
 %%
 
-int main(){
-    #ifdef YYDEBUG
-  yydebug = 1;
-#endif
-
-    yyparse();
-    return 0;
+std::string* getOutput(){
+        return outputStr; 
 }
 
-void token(const char* s){
-    //printf("%s\n", s);
-    return;
+int cnt(){
+        return 10;
 }
 
 void yyerror(const char *s){
-    extern char *yytext;  // Include the current token text
-    fprintf(stderr, "Error: %s at line %d near token '%s'\n", s, yylineno, yytext);
+    extern char *yytext;
+    fprintf(stderr, "Error: %s at line near token '%s'\n", s, yytext);
 }

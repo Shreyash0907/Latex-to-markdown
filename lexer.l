@@ -1,7 +1,7 @@
 %{
     #include <stdio.h>
-    #include "parser.tab.h"
-    int yylineno;
+    #include "parser.tab.hpp"
+
 %}
 
 ALPHABET            [a-zA-Z]
@@ -78,7 +78,7 @@ BTYPE               ({DOCUMENT}|{TABLE}|{UNOLIST}|{OLIST}|{CBLOCK})
 {NEWLINE}                                       {return NEWLINE;};
 {BSLASH}                                        {return BSLASH; };
 {TEXT}                                          {
-                                                    yylval.strval = new std::string(yytext);
+                                                    yylval.str = new std::string(yytext);
                                                     return TEXT;
                                                 };
 .                                               {return yytext[0]; };
