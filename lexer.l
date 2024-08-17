@@ -74,7 +74,9 @@ BTYPE               ({DOCUMENT}|{TABLE}|{UNOLIST}|{OLIST}|{CBLOCK})
 {APER}                                          {return APER; };
 {PIPE}                                          {return PIPE;};
 {TAB}                                           {return TAB; };
-{SPACE}{1,}                                     {return SPACE;};
+{SPACE}{1,}                                     {
+                                                    yylval.str = new std::string(yytext);
+                                                    return SPACE;};
 {NEWLINE}                                       {return NEWLINE;};
 {BSLASH}                                        {return BSLASH; };
 {TEXT}                                          {
