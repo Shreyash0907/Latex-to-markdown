@@ -7,6 +7,7 @@ using namespace std;
 extern int yylex(void);
 extern int yyparse(void);
 extern std::string* getOutput();
+extern int yydebug;
 
 int main(int argc, char* argv[]){
 

@@ -1,9 +1,14 @@
+%debug
 %{
     #include <string>
+    #include<vector>
+    #include "/mnt/d/Mtech/COP701/Latex-to-markdown/Node.hpp"
     extern int yylineno;
     std::string* outputStr;
+    Node* root;
 
-    int cnt = 1;
+
+    int cnt = 0;
     int tcol = 0;
     int trow = 0;
 %}
@@ -11,6 +16,8 @@
 %code requires {
     #include <cstdio>
     #include <string>
+    #include <vector>
+    #include "/mnt/d/Mtech/COP701/Latex-to-markdown/Node.hpp"
     using namespace std;
     extern int yylex(void);
     static void yyerror(const char* s); 
@@ -21,11 +28,11 @@
      std::string* str;
 }
 
-%type <str> operations
-%type <str> unoitem gsentence gsentences 
-%type <str> oitem gdata sentence sentences ospace ospaces 
-%type <str> tcontent tstructure tline tlines lsentences symbols
-%type <str> codecontent start program blocks operationList ostatement
+%type <Node> operations
+%type <Node> unoitem gsentence gsentences 
+%type <Node> oitem gdata sentence sentences ospace ospaces 
+%type <Node> tcontent tstructure tline tlines lsentences symbols list
+%type <Node> codecontent start program blocks operationList ostatement table thead url
 %token OTHER
 %token LCURB RCURB APER TAB BSLASH PIPE NEWLINE LSQRB RSQRB
 %token <str> TEXT SPACE
@@ -41,54 +48,340 @@
 
 %%
     start : startingtext start {};
-            | BDOC NEWLINE program EDOC {outputStr = $3;};
+            | BDOC NEWLINE program EDOC                 {
+                                                            root = new Node(start);
+                                                            root->value = "";
+                                                            root->productions.push_back($1);
+                                                            root->productions.push_back($2);
+                                                            root->productions.push_back($3);
+                                                            root->productions.push_back($4);
+                                                            
+
+                                                        };
              ;
             
-    program :                          { $$ = new std::string("");  } 
-            | operationList program  {$$ = new std::string(*$1 + *$2); delete $1; delete $2;}
-            | blocks program         {$$ = new std::string(*$1 + *$2); delete $1; delete $2;}
-            ;
-    blocks : BUNOLIST unoitem EUNOLIST NEWLINE                {$$ = $2;}
-            | BOLIST oitem EOLIST NEWLINE                     {$$ = $2;}
-            | BTABLE LCURB tstructure RCURB NEWLINE tcontent ETABLE {$$ = new std::string( *$6);}
-            | BCBLOCK codecontent ECBLOCK {$$ = new std::string("```" + *$2 + "```");}
+    program :                                           {
+                                                            $$ = new Node(program);
+                                                            $$->value = "";
+                                                            
+                                                        } 
+            | operationList program                     {
+                                                            $$ = new Node(program);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+
+                                                            delete $1; delete $2;
+                                                        }
+            | blocks program                            {
+                                                            $$ = new Node(program);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+
+                                                            delete $1; delete $2;
+                                                        }
             ;
 
 
-    operationList: operations {$$ = $1;}
+    blocks : list                                       {
+                                                            $$ = new Node(blocks);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+
+                                                            delete $1;
+                                                        }
+            | BTABLE table ETABLE                       {
+                                                            $$ = new Node(blocks);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+                                                            $$->productions.push_back($3);
+                                                            
+                                                            delete $1; delete $2; delete $3;
+                                                        }
+            | BCBLOCK codecontent ECBLOCK               {
+                                                            $$ = new Node(blocks);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+                                                            $$->productions.push_back($3);
+                                                            
+                                                            delete $1; delete $2; delete $3;
+                                                        }
             ;
 
-    operations: sentences {$$ = $1;}
-              | ITALIC ostatement {$$ = new std::string("*" + *$2 + "*");}
-              | BOLD ostatement {$$ = new std::string("**" + *$2 + "**");}
-              | SECTION ostatement {$$ = new std::string("# " + *$2);}
-              | SUBSECTION ostatement {$$ = new std::string("## " + *$2);}
-              | SUBSUBSECTION ostatement {$$ = new std::string("### " + *$2);}
-              | HREF LCURB sentences RCURB ostatement {$$ = new std::string("[" + *$5 + "]" + "(" + *$3 + ")" );}
-              | HRULE {$$ = new std::string("---");}
-              | GRAPHIC gdata ostatement {$$ = new std::string("![Image]("+ *$3 + ")" );}
-              | PARAGRAPH {$$ = new std::string("\n");}
+    table : thead NEWLINE tcontent                      {
+                                                            $$ = new Node(table);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+                                                            $$->productions.push_back($3);
+                                                            
+                                                            delete $1; delete $2; delete $3;
+                                                        }
+
+    thead: LCURB tstructure RCURB                       {
+                                                            $$ = new Node(thead);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+                                                            $$->productions.push_back($3);
+                                                            
+                                                            delete $1; delete $2; delete $3;
+                                                        }
+
+    list :  BUNOLIST unoitem EUNOLIST NEWLINE           {
+                                                            $$ = new Node(list);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+                                                            $$->productions.push_back($3);
+                                                            $$->productions.push_back($3);
+                                                            
+                                                            delete $1; delete $2; delete $3; delete $4;
+                                                        }
+           | BOLIST oitem EOLIST NEWLINE                {
+                                                            $$ = new Node(list);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+                                                            $$->productions.push_back($3);
+                                                            $$->productions.push_back($3);
+                                                            
+                                                            delete $1; delete $2; delete $3; delete $4;
+                                                        }
+
+    operationList: operations                           {
+                                                            $$ = new Node(list);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            
+                                                            delete $1;
+                                                        }
+            ;
+
+    operations: sentences                               {
+                                                            $$ = new Node(list);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+
+                                                            delete $1;
+                                                        }
+              | ITALIC ostatement                       {
+                                                            $$ = new Node(operations);
+                                                            $$->value = "";
+
+                                                            Node* temp = new Node(italic);
+                                                            temp->value = "";
+                                                            temp->productions.push_back($2);
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete $2;
+                                                            delete temp;
+                                                        }
+              | BOLD ostatement                         {
+                                                            $$ = new Node(operations);
+                                                            $$->value = "";
+
+                                                            Node* temp = new Node(bold);
+                                                            temp->value = "";
+                                                            temp->productions.push_back($2);
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete $2;
+                                                            delete temp;
+                                                        }
+              | SECTION ostatement                      {
+                                                            $$ = new Node(operations);
+                                                            $$->value = "";
+
+                                                            Node* temp = new Node(section);
+                                                            temp->value = "";
+                                                            temp->productions.push_back($2);
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete $2;
+                                                            delete temp;
+                                                        }
+              | SUBSECTION ostatement                   {
+                                                            $$ = new Node(operations);
+                                                            $$->value = "";
+
+                                                            Node* temp = new Node(subsection);
+                                                            temp->value = "";
+                                                            temp->productions.push_back($2);
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete $2;
+                                                            delete temp;
+                                                        }
+              | SUBSUBSECTION ostatement                {
+                                                            $$ = new Node(operations);
+                                                            $$->value = "";
+
+                                                            Node* temp = new Node(subsubsection);
+                                                            temp->value = "";
+                                                            temp->productions.push_back($2);
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete $2;
+                                                            delete temp;
+                                                        }
+              | HREF url ostatement                     {
+                                                            $$ = new Node(operations);
+                                                            $$->value = "";
+
+                                                            Node* temp = new Node(href);
+                                                            temp->value = "";
+                                                            temp->productions.push_back($2);
+                                                            temp->productions.push_back($3);
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete $2;
+                                                            delete $3;
+                                                            delete temp;
+                                                        }
+              | HRULE                                   {
+                                                            $$ = new Node(operations);
+                                                            $$->value = "";
+
+                                                            Node* temp = new Node(hrule);
+                                                            temp->value = "";
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+                                                        }
+              | GRAPHIC gdata ostatement                {
+                                                            $$ = new Node(operations);
+                                                            $$->value = "";
+
+                                                            Node* temp = new Node(graphic);
+                                                            temp->value = "";
+                                                            temp->productions.push_back($3);
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete $3;
+                                                            delete temp;
+                                                        }
+              | PARAGRAPH                               {
+                                                            $$ = new Node(operations);
+                                                            $$->value = "";
+
+                                                            Node* temp = new Node(paragraph);
+                                                            temp->value = "";
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+                                                        }
               ;
 
-    ostatement : LCURB operations RCURB {$$ = new std::string(*$2);} 
+    url : LCURB sentences RCURB                         {
+                                                            $$ = new Node(url);
+                                                            $$->value = "";
 
-    unoitem : ospaces ITEM lsentences {$$ = new std::string("-" + *$3); delete $3;};
-            | ospaces ITEM lsentences unoitem {$$ = new std::string("-" + *$3 + *$4); delete $3; delete $4;};
+                                                            $$->productions.push_back($2);
+
+                                                            delete $2;
+                                                        }
+
+    ostatement : LCURB operations RCURB                 {
+                                                            $$ = new Node(ostatement);
+                                                            $$->value = "";
+
+                                                            $$->productions.push_back($2);
+
+                                                            delete $2;
+                                                        } 
+
+    unoitem :                                           {
+                                                            $$ = new Node(unoitem);
+                                                            $$->value = "";
+                                                        };
+            | ospaces ITEM lsentences unoitem           {
+                                                            $$ = new Node(unoitem);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($3);
+                                                            $$->productions.push_back($4);
+
+                                                            delete $4;
+                                                            delete $3;
+                                                        };
+            | list unoitem                              {
+                                                            $$ = new Node(unoitem);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+
+                                                            delete $1;
+                                                            delete $2;
+                                                        }
             ;
 
-    oitem :     {$$ = new std::string("");};
-            | oitem ospaces ITEM lsentences  {
-                                                $$ = new std::string(*$1 + std::to_string(cnt++) + "." + *$4);
-                                                delete $4; delete $1;;
-                                            };
+    oitem :                                             {
+                                                            $$ = new Node(oitem);
+                                                            $$->value = "";
+                                                        };
+            | ospaces ITEM lsentences oitem             {
+                                                            $$ = new Node(oitem);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($3);
+                                                            $$->productions.push_back($4);
+
+                                                            delete $4;
+                                                            delete $3;
+                                                        };
+            | list oitem                                {
+                                                            $$ = new Node(oitem);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+
+                                                            delete $1;
+                                                            delete $2;
+                                                        }
             ;
 
-    tstructure :        {$$ = new std::string("");}
-               | PIPE tstructure {$$ = new std::string("|" + *$2);};
-               | TEXT tstructure {$$ = new std::string(*$1 + *$2); tcol++;};
+    tstructure :                                        {
+                                                            $$ = new Node(tstructure);
+                                                            $$->value = "";
+                                                        }
+               | PIPE tstructure                        {
+                                                            $$ = new Node(tstructure);
+                                                            $$->value = "";
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+
+                                                            delete $1;
+                                                            delete $2;
+                                                        };
+               | TEXT tstructure                        {
+                                                            $$ = new Node(tstructure);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(text);
+                                                            temp->value = new std::string(*$1);
+
+                                                            $$->productions.push_back(temp);
+                                                            $$->productions.push_back($2);  
+
+                                                            delete $2; delete temp;
+                                                        };
                 ;
                
-    tcontent : {$$ = new std::string("");}
+    tcontent :                                          {
+                                                            $$ = new Node(tcontent);
+                                                            $$->value = new std::string("");
+                                                        }
              | tcontent tlines BSLASH BSLASH ospaces     {
                                                             trow++;
                                                             string* temp = new std::string( *$1 + "| " + *$2 + "|\n" );
@@ -100,59 +393,307 @@
                                                             }
                                                             $$ = temp;
                                                         }
-             | tcontent HLINE ospaces  {{$$ = new std::string(*$1);};}
+             | tcontent HLINE ospaces                   {
+                                                            $$ = new Node(tcontent);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($1);
+
+                                                            delete $1;
+                                                        }
             ;
 
-    tlines : tline  {$$ = new std::string(*$1);};
-           | tline tlines  {$$ = new std::string(*$1 + *$2);};
+    tlines : tline                                      {
+                                                            $$ = new Node(tlines);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($1);
+
+                                                            delete $1;
+                                                        };
+           | tline tlines                               {
+                                                            $$ = new Node(tlines);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+
+                                                            delete $1;
+                                                        };
         ;
 
-    tline : TEXT ospaces {$$ = new std::string(*$1 + *$2);};
-          | APER ospaces {$$ = new std::string("|" + *$2);};
+    tline : TEXT ospaces                                {
+                                                            $$ = new Node(tline);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(text);
+                                                            temp->value = new std::string(*$1);
+
+                                                            $$->productions.push_back(temp)
+                                                            $$->productions.push_back($2);
+
+                                                            delete temp; delete $2;    
+                                                        };
+          | APER ospaces                                {
+                                                            $$ = new Node(tline);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(aper);
+                                                            temp->value = new std::string(*$1);
+
+                                                            $$->productions.push_back(temp);
+                                                            $$->productions.push_back($2);
+
+                                                            delete temp; delete $2;  
+                                                        };
           ;
 
-    gdata :  {}
-            | LSQRB gsentences RSQRB {$$ = new std::string( *$2 );};
+    gdata :                                             {}
+            | LSQRB gsentences RSQRB                    {
+                                                            $$ = new Node(gdata);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($2);
 
-    codecontent :  { $$ = new std::string("");}
-                | sentences codecontent  {$$ = new std::string(*$1 + *$2); delete $2; delete $1;};
-                | symbols codecontent    {$$ = new std::string( *$1 + *$2) ; delete $2; delete $1;}
+                                                            delete temp; delete $2;      
+                                                        };
 
-    symbols : LCURB {$$ = new std::string("{");}
-            | RCURB {$$ = new std::string("}");}
-            | LSQRB {$$ = new std::string("[");}
-            | RSQRB {$$ = new std::string("]");}
-            | APER  {$$ = new std::string("&");}
-            | PIPE  {$$ = new std::string("|");}
-            | BSLASH {$$ = new std::string("\\");}
+    codecontent :                                       {}
+                | sentences codecontent                 {
+                                                            $$ = new Node(codecontent);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($1);    
+                                                            $$->productions.push_back($2);
+
+                                                            delete $1; delete $2;    
+                                                        };
+                | symbols codecontent                   {
+                                                            $$ = new Node(codecontent);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($1);    
+                                                            $$->productions.push_back($2);
+
+                                                            delete $2; delete $1;
+                                                        }
+
+    symbols : LCURB                                     {
+                                                            $$ = new Node(symbols);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(lcurb);
+                                                            temp->value = new std::string("");
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+                                                        }
+            | RCURB                                     {
+                                                            
+                                                            $$ = new Node(symbols);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(rcurb);
+                                                            temp->value = new std::string("");
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+                                                        }
+            | LSQRB                                     {
+                
+                                                            $$ = new Node(symbols);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(lsqrb);
+                                                            temp->value = new std::string("");
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+                                                        }
+            | RSQRB                                     {
+                                                            $$ = new Node(symbols);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(rsqrb);
+                                                            temp->value = new std::string("");
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+                                                        }
+            | APER                                      {
+                                                            $$ = new Node(symbols);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(aper);
+                                                            temp->value = new std::string("");
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+                                                        }
+            | PIPE                                      {
+                                                            $$ = new Node(symbols);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(pipe);
+                                                            temp->value = new std::string("");
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+                                                        }
+            | BSLASH                                    {
+                                                            $$ = new Node(symbols);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(bslash);
+                                                            temp->value = new std::string("");
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+                                                        }
     startingtext : TEXT {}
 
-    sentences : sentence {$$ = new std::string(*$1);};
-                | sentence sentences {$$ = new std::string(*$1 + *$2);};
-                ; 
+    sentences : sentence                                {
+                                                            $$ = new Node(sentences);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($1);
 
-    ospace : SPACE   {$$ = $1;};
-            | NEWLINE  {$$ = new std::string("\n");};
+                                                            delete $1;
+                                                        };
+                | sentence sentences                    {
+                                                            $$ = new Node(sentences);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+
+                                                            delete $1; delete $2;
+                                                        };
+                ;
+
+    ospace : SPACE                                      {
+                                                            $$ = new Node(ospace);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(space);
+                                                            temp->value = new std::string(*$1);
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+                                                        };
+            | NEWLINE                                   {
+                                                            $$ = new Node(ospace);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(newline);
+                                                            temp->value = new std::string(*$1);
+
+                                                            $$->productions.push_back(temp);
+                                                            delete temp;
+                                                        };
             ;
 
-    ospaces :   {$$ = new std::string("");};
-            | ospaces ospace {$$ = new std::string(*$2 + *$1);};
+    ospaces :                                           {};
+            | ospaces ospace                            {
+                                                            $$ = new Node(ospaces);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($2);
+                                                            $$->productions.push_back($1);
+
+                                                            delete $1; delete $2;
+                                                        };
             ;
 
-    gsentences:         {$$ = new std::string("");};
-                | gsentences gsentence {$$ = new std::string(*$2 + *$1);};
+    gsentences:                                         {}
+                | gsentences gsentence                  {
+                                                            $$ = new Node(gsentences);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($2);
+                                                            $$->productions.push_back($1);
+
+                                                            delete $1; delete $2;    
+                                                        };
                 ;
     
-    gsentence : BSLASH {}
-                | sentence {$$ = $1;}
+    gsentence : BSLASH                                  {}
+                | sentence                              {
+                                                            $$ = new Node(gsentence);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($1);
 
-    sentence : TEXT {$$ = $1;}
-             | ospace  {$$ = $1;}
+                                                            delete $1;
+                                                        }
+
+    sentence : TEXT                                     {
+                                                            $$ = new Node(sentence);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(text);
+                                                            temp->value = new std::string(*$1);
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+    }
+             | ospace                                   {
+                                                            $$ = new Node(sentence);
+                                                            $$->value = new std::string("");
+                                                            $$->productions.push_back($1);
+
+                                                            delete $1; 
+                                                        }
              ;
 
-    lsentences : NEWLINE {$$ = new std::string("\n");}
-                | SPACE lsentences {$$ = new std::string(*$1 + *$2);}
-                | TEXT lsentences { $$ = new std::string(*$1 + *$2);}
+    lsentences : NEWLINE optspace                       {
+                                                            $$ = new Node(sentence);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(newline);
+                                                            temp->value = new std::string("\n");
+
+                                                            $$->productions.push_back(temp);
+                                                            $$->productions.push_back($2);
+
+                                                            delete temp; delete $2;
+                                                        }
+                | SPACE lsentences                      {
+                                                            $$ = new Node(sentence);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(space);
+                                                            temp->value = new std::string(*$1);
+
+                                                            $$->productions.push_back(temp);
+                                                            $$->productions.push_back($2);
+
+                                                            delete temp; delete $2;
+                                                        }
+                | TEXT lsentences                       {
+                                                            $$ = new Node(sentence);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(test);
+                                                            temp->value = new std::string(*$1);
+
+                                                            $$->productions.push_back(temp);
+                                                            $$->productions.push_back($2);
+
+                                                            delete temp; delete $2;
+                                                        }
+                ;
+    
+    optspace :                                          {}
+               | SPACE                                  {
+                                                            $$ = new Node(sentence);
+                                                            $$->value = new std::string("");
+
+                                                            Node* temp = new Node(newline);
+                                                            temp->value = new std::string("\n");
+
+                                                            $$->productions.push_back(temp);
+
+                                                            delete temp;
+                                                        }
 
 %%
 

@@ -1,5 +1,6 @@
 %{
     #include <stdio.h>
+    #include "/mnt/d/Mtech/COP701/Latex-to-markdown/Node.hpp"
     #include "parser.tab.hpp"
 
 %}
