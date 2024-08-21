@@ -6,10 +6,11 @@ using namespace std;
 
 extern int yylex(void);
 extern int yyparse(void);
-extern std::string* getOutput();
+extern Node* getRoot();
 extern int yydebug;
 
 int main(int argc, char* argv[]){
+    yydebug = 1;
 
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
@@ -42,10 +43,11 @@ int main(int argc, char* argv[]){
     string* convertedStr;
     yyparse();
 
-    convertedStr = getOutput();
-    printf("%s\n", convertedStr->c_str());
+    Node* temp = getRoot();
+    temp->convert2Markdown();
 
-    fprintf(outputPtr,"%s\n", convertedStr->c_str());
+    printf("%s\n", temp->getValue()->c_str());
+    fprintf(outputPtr,"%s\n", temp->getValue()->c_str());
 
     fclose(inputPtr);
     fclose(outputPtr);

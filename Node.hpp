@@ -5,79 +5,79 @@
 #include <memory>
 #include <vector>
 
-// enum symbol {
-//     LCURB,
-//     RCURB,
-//     OTHER,
-//     APER,
-//     TAB,
-//     BSLASH,
-//     PIPE,
-//     NEWLINE,
-//     LSQRB,
-//     RSQRB,
-//     TEXT,
-//     SPACE,
-//     ITALIC,
-//     BOLD,
-//     HREF,
-//     GRAPHIC,
-//     HRULE,
-//     SECTION,
-//     PARAGRAPH,
-//     ITEM,
-//     SUBSECTION,
-//     SUBSUBSECTION,
-//     HLINE,
-//     BCBLOCK,
-//     ECBLOCK,
-//     BOLIST,
-//     EOLIST,
-//     BUNOLIST,
-//     EUNOLIST,
-//     BTABLE,
-//     ETABLE,
-//     BDOC,
-//     EDOC,
-//     operations,
-//     unoitem,
-//     gsentence,
-//     gsentences,
-//     oitem,
-//     gdata,
-//     sentence,
-//     sentences,
-//     ospace,
-//     ospaces,
-//     tcontent,
-//     tstructure,
-//     tline, 
-//     tlines,
-//     lsentences,
-//     symbols,
-//     list,
-//     codecontent,
-//     start,
-//     program,
-//     blocks,
-//     operationList,
-//     ostatement,
-//     thead,
-//     url
-// };
+enum symbol {
+    Operations,
+    Unoitem,
+    Gsentence,
+    Gsentences,
+    Oitem,
+    Gdata,
+    Sentence,
+    Sentences,
+    Ospace,
+    Ospaces,
+    Tcontent,
+    Tstructure,
+    Tline,
+    Tlines,
+    Lsentences,
+    Symbols,
+    List,
+    Codecontent,
+    Start,
+    Program,
+    Blocks,
+    Operationlist,
+    Ostatement,
+    Table,
+    Thead,
+    Url,
+    Text,
+    Space,
+    Newline,
+    Italic,
+    Bold,
+    Section,
+    Subsection,
+    Subsubsection,
+    Href,
+    Hrule,
+    Graphic,
+    Paragraph,
+    Lcurb,
+    Rcurb,
+    Lsqrb,
+    Rsqrb,
+    Aper,
+    Pipe,
+    Bslash,
+    Code,
+    Empty
+};
 
 class Node{
     private: 
         std::string* value ;
-        int type;
-        std::vector< Node > productions;
-
+        symbol type;
+        
+        
     public:
-        int getType(){
+        std::vector< Node* > productions;
+        int depth;
+        symbol getType(){
             return type;
         }
 
-        Node(int val) : type(val) {}
+        void setValue(std::string* val){
+            value = val;
+        }
+        std::string* getValue(){
+            return value;
+        }
+
+        Node(symbol val) : type(val) {}
+
+        void convert2Markdown();
 };
 
 

@@ -2,11 +2,9 @@
 %{
     #include <string>
     #include<vector>
-    #include "/mnt/d/Mtech/COP701/Latex-to-markdown/Node.hpp"
+    #include "Node.hpp"
     extern int yylineno;
-    std::string* outputStr;
     Node* root;
-
 
     int cnt = 0;
     int tcol = 0;
@@ -17,22 +15,24 @@
     #include <cstdio>
     #include <string>
     #include <vector>
-    #include "/mnt/d/Mtech/COP701/Latex-to-markdown/Node.hpp"
+    #include "Node.hpp"
     using namespace std;
     extern int yylex(void);
     static void yyerror(const char* s); 
-    std::string* getOutput();
+    Node* getRoot();
 }
 
 %union {
      std::string* str;
+     Node* node;
 }
 
-%type <Node> operations
-%type <Node> unoitem gsentence gsentences 
-%type <Node> oitem gdata sentence sentences ospace ospaces 
-%type <Node> tcontent tstructure tline tlines lsentences symbols list
-%type <Node> codecontent start program blocks operationList ostatement table thead url
+%type <node> operations
+%type <node> unoitem gsentence gsentences optspace
+%type <node> oitem gdata sentence sentences ospace ospaces 
+%type <node> tcontent tstructure tline tlines lsentences symbols list
+%type <node> codecontent start program blocks operationList ostatement table thead url
+
 %token OTHER
 %token LCURB RCURB APER TAB BSLASH PIPE NEWLINE LSQRB RSQRB
 %token <str> TEXT SPACE
@@ -47,343 +47,311 @@
 %start start
 
 %%
-    start : startingtext start {};
+    start : startingtext start                          {};
             | BDOC NEWLINE program EDOC                 {
-                                                            root = new Node(start);
-                                                            root->value = "";
-                                                            root->productions.push_back($1);
-                                                            root->productions.push_back($2);
+                                                            root = new Node(Start);
+                                                            root->setValue(new std::string(""));
                                                             root->productions.push_back($3);
-                                                            root->productions.push_back($4);
                                                             
-
                                                         };
              ;
             
     program :                                           {
-                                                            $$ = new Node(program);
-                                                            $$->value = "";
-                                                            
+                                                            $$ = new Node(Empty);
+                                                            $$->setValue(new std::string(""));
                                                         } 
             | operationList program                     {
-                                                            $$ = new Node(program);
-                                                            $$->value = "";
+                                                            $$ = new Node(Program);
+                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
                                                             $$->productions.push_back($2);
 
-                                                            delete $1; delete $2;
                                                         }
             | blocks program                            {
-                                                            $$ = new Node(program);
-                                                            $$->value = "";
+                                                            $$ = new Node(Program);
+                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
                                                             $$->productions.push_back($2);
 
-                                                            delete $1; delete $2;
                                                         }
             ;
 
 
     blocks : list                                       {
-                                                            $$ = new Node(blocks);
-                                                            $$->value = "";
+                                                            $$ = new Node(Blocks);
+                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
 
-                                                            delete $1;
                                                         }
             | BTABLE table ETABLE                       {
-                                                            $$ = new Node(blocks);
-                                                            $$->value = "";
-                                                            $$->productions.push_back($1);
+                                                            $$ = new Node(Blocks);
+                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($2);
-                                                            $$->productions.push_back($3);
                                                             
-                                                            delete $1; delete $2; delete $3;
+                                                            
                                                         }
             | BCBLOCK codecontent ECBLOCK               {
-                                                            $$ = new Node(blocks);
-                                                            $$->value = "";
-                                                            $$->productions.push_back($1);
-                                                            $$->productions.push_back($2);
-                                                            $$->productions.push_back($3);
-                                                            
-                                                            delete $1; delete $2; delete $3;
+                                                            $$ = new Node(Blocks);
+                                                            $$->setValue(new std::string(""));
+
+                                                            Node* temp = new Node(Code);
+                                                            temp->setValue(new std::string(""));
+
+                                                            temp->productions.push_back($2);
+
+                                                            $$->productions.push_back(temp);
                                                         }
             ;
 
     table : thead NEWLINE tcontent                      {
-                                                            $$ = new Node(table);
-                                                            $$->value = "";
-                                                            $$->productions.push_back($1);
-                                                            $$->productions.push_back($2);
+                                                            $$ = new Node(Table);
+                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($3);
                                                             
-                                                            delete $1; delete $2; delete $3;
+                                                           
                                                         }
 
     thead: LCURB tstructure RCURB                       {
-                                                            $$ = new Node(thead);
-                                                            $$->value = "";
-                                                            $$->productions.push_back($1);
+                                                            $$ = new Node(Thead);
+                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($2);
-                                                            $$->productions.push_back($3);
                                                             
-                                                            delete $1; delete $2; delete $3;
+                                                           
                                                         }
 
     list :  BUNOLIST unoitem EUNOLIST NEWLINE           {
-                                                            $$ = new Node(list);
-                                                            $$->value = "";
-                                                            $$->productions.push_back($1);
+                                                            $$ = new Node(List);
+                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($2);
-                                                            $$->productions.push_back($3);
-                                                            $$->productions.push_back($3);
+
                                                             
-                                                            delete $1; delete $2; delete $3; delete $4;
                                                         }
            | BOLIST oitem EOLIST NEWLINE                {
-                                                            $$ = new Node(list);
-                                                            $$->value = "";
-                                                            $$->productions.push_back($1);
+                                                            $$ = new Node(List);
+                                                            $$->setValue(new std::string(""));                                              
                                                             $$->productions.push_back($2);
-                                                            $$->productions.push_back($3);
-                                                            $$->productions.push_back($3);
                                                             
-                                                            delete $1; delete $2; delete $3; delete $4;
                                                         }
 
     operationList: operations                           {
-                                                            $$ = new Node(list);
-                                                            $$->value = "";
+                                                            $$ = new Node(Operationlist);
+                                                            $$->setValue(new std::string("operations"));
                                                             $$->productions.push_back($1);
                                                             
-                                                            delete $1;
+                                                            
                                                         }
             ;
 
     operations: sentences                               {
-                                                            $$ = new Node(list);
-                                                            $$->value = "";
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
 
-                                                            delete $1;
+                                                            
                                                         }
               | ITALIC ostatement                       {
-                                                            $$ = new Node(operations);
-                                                            $$->value = "";
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(italic);
-                                                            temp->value = "";
+                                                            Node* temp = new Node(Italic);
+                                                           temp->setValue(new std::string(""));
                                                             temp->productions.push_back($2);
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete $2;
-                                                            delete temp;
+                                                            
                                                         }
               | BOLD ostatement                         {
-                                                            $$ = new Node(operations);
-                                                            $$->value = "";
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(bold);
-                                                            temp->value = "";
+                                                            Node* temp = new Node(Bold);
+                                                           temp->setValue(new std::string(""));
                                                             temp->productions.push_back($2);
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete $2;
-                                                            delete temp;
+                                                            
                                                         }
               | SECTION ostatement                      {
-                                                            $$ = new Node(operations);
-                                                            $$->value = "";
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(section);
-                                                            temp->value = "";
+                                                            Node* temp = new Node(Section);
+                                                           temp->setValue(new std::string(""));
                                                             temp->productions.push_back($2);
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete $2;
-                                                            delete temp;
+                                                           
                                                         }
               | SUBSECTION ostatement                   {
-                                                            $$ = new Node(operations);
-                                                            $$->value = "";
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(subsection);
-                                                            temp->value = "";
+                                                            Node* temp = new Node(Subsection);
+                                                           temp->setValue(new std::string(""));
                                                             temp->productions.push_back($2);
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete $2;
-                                                            delete temp;
+                                                            
                                                         }
               | SUBSUBSECTION ostatement                {
-                                                            $$ = new Node(operations);
-                                                            $$->value = "";
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(subsubsection);
-                                                            temp->value = "";
+                                                            Node* temp = new Node(Subsubsection);
+                                                           temp->setValue(new std::string(""));
                                                             temp->productions.push_back($2);
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete $2;
-                                                            delete temp;
+                                                            
                                                         }
               | HREF url ostatement                     {
-                                                            $$ = new Node(operations);
-                                                            $$->value = "";
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(href);
-                                                            temp->value = "";
+                                                            Node* temp = new Node(Href);
+                                                           temp->setValue(new std::string(""));
                                                             temp->productions.push_back($2);
                                                             temp->productions.push_back($3);
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete $2;
-                                                            delete $3;
-                                                            delete temp;
                                                         }
               | HRULE                                   {
-                                                            $$ = new Node(operations);
-                                                            $$->value = "";
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(hrule);
-                                                            temp->value = "";
+                                                            Node* temp = new Node(Hrule);
+                                                           temp->setValue(new std::string(""));
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete temp;
                                                         }
               | GRAPHIC gdata ostatement                {
-                                                            $$ = new Node(operations);
-                                                            $$->value = "";
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(graphic);
-                                                            temp->value = "";
+                                                            Node* temp = new Node(Graphic);
+                                                           temp->setValue(new std::string(""));
                                                             temp->productions.push_back($3);
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete $3;
-                                                            delete temp;
+                                                            
                                                         }
               | PARAGRAPH                               {
-                                                            $$ = new Node(operations);
-                                                            $$->value = "";
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(paragraph);
-                                                            temp->value = "";
+                                                            Node* temp = new Node(Paragraph);
+                                                           temp->setValue(new std::string(""));
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete temp;
+                                                           
                                                         }
               ;
 
     url : LCURB sentences RCURB                         {
-                                                            $$ = new Node(url);
-                                                            $$->value = "";
+                                                            $$ = new Node(Url);
+                                                            $$->setValue(new std::string(""));
 
                                                             $$->productions.push_back($2);
 
-                                                            delete $2;
+                                                            
                                                         }
 
     ostatement : LCURB operations RCURB                 {
-                                                            $$ = new Node(ostatement);
-                                                            $$->value = "";
+                                                            $$ = new Node(Ostatement);
+                                                            $$->setValue(new std::string(""));
 
                                                             $$->productions.push_back($2);
 
-                                                            delete $2;
                                                         } 
 
     unoitem :                                           {
-                                                            $$ = new Node(unoitem);
-                                                            $$->value = "";
+                                                            $$ = new Node(Empty);
+                                                            $$->setValue(new std::string(""));
                                                         };
             | ospaces ITEM lsentences unoitem           {
-                                                            $$ = new Node(unoitem);
-                                                            $$->value = "";
+                                                            $$ = new Node(Unoitem);
+                                                            $$->depth = cnt;
+                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($3);
                                                             $$->productions.push_back($4);
 
-                                                            delete $4;
-                                                            delete $3;
+                                                            
                                                         };
-            | list unoitem                              {
-                                                            $$ = new Node(unoitem);
-                                                            $$->value = "";
-                                                            $$->productions.push_back($1);
-                                                            $$->productions.push_back($2);
-
-                                                            delete $1;
-                                                            delete $2;
+            | list unoitem                              {   printf("last --------");
+                                                            $$ = new Node(Unoitem);
+                                                            $$->setValue(new std::string(""));
+                                                            
+                                                        
                                                         }
             ;
 
     oitem :                                             {
-                                                            $$ = new Node(oitem);
-                                                            $$->value = "";
+                                                            $$ = new Node(Empty);
+                                                            $$->setValue(new std::string(""));
                                                         };
             | ospaces ITEM lsentences oitem             {
-                                                            $$ = new Node(oitem);
-                                                            $$->value = "";
+                                                            $$ = new Node(Oitem);
+                                                            $$->depth = cnt;
+                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($3);
                                                             $$->productions.push_back($4);
 
-                                                            delete $4;
-                                                            delete $3;
+                                                          
                                                         };
             | list oitem                                {
-                                                            $$ = new Node(oitem);
-                                                            $$->value = "";
+                                                            $$ = new Node(Oitem);
+                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
                                                             $$->productions.push_back($2);
-
-                                                            delete $1;
-                                                            delete $2;
+                                                    
                                                         }
             ;
 
     tstructure :                                        {
-                                                            $$ = new Node(tstructure);
-                                                            $$->value = "";
+                                                            $$ = new Node(Tstructure);
+                                                            $$->setValue(new std::string(""));
                                                         }
-               | PIPE tstructure                        {
-                                                            $$ = new Node(tstructure);
-                                                            $$->value = "";
-                                                            $$->productions.push_back($1);
+                | PIPE tstructure                        {
+                                                            $$ = new Node(Tstructure);
+                                                            $$->setValue(new std::string(""));
+
+                                                            Node* temp = new Node(Pipe);
+                                                            temp->setValue( new std::string("|"));
+
+                                                            $$->productions.push_back(temp);
                                                             $$->productions.push_back($2);
 
-                                                            delete $1;
-                                                            delete $2;
+                                                            
                                                         };
                | TEXT tstructure                        {
-                                                            $$ = new Node(tstructure);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Tstructure);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(text);
-                                                            temp->value = new std::string(*$1);
+                                                            Node* temp = new Node(Text);
+                                                            temp->setValue( new std::string(*$1));
 
                                                             $$->productions.push_back(temp);
                                                             $$->productions.push_back($2);  
 
-                                                            delete $2; delete temp;
+                                                            
                                                         };
                 ;
                
     tcontent :                                          {
-                                                            $$ = new Node(tcontent);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Tcontent);
+                                                           $$->setValue(new std::string(""));
                                                         }
              | tcontent tlines BSLASH BSLASH ospaces     {
-                                                            trow++;
+                                                           /* trow++;
                                                             string* temp = new std::string( *$1 + "| " + *$2 + "|\n" );
                                                             if(trow == 1){
                                                                 for(int i = 0 ; i < tcol; i++){
@@ -391,314 +359,315 @@
                                                                 }
                                                                 temp = new std::string(*temp + "|\n");
                                                             }
-                                                            $$ = temp;
+                                                            $$ = temp;*/
                                                         }
              | tcontent HLINE ospaces                   {
-                                                            $$ = new Node(tcontent);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Tcontent);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
 
-                                                            delete $1;
+                                                            
                                                         }
             ;
 
     tlines : tline                                      {
-                                                            $$ = new Node(tlines);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Tlines);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
 
-                                                            delete $1;
+                                                            
                                                         };
            | tline tlines                               {
-                                                            $$ = new Node(tlines);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Tlines);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
                                                             $$->productions.push_back($2);
 
-                                                            delete $1;
+                                                            
                                                         };
         ;
 
     tline : TEXT ospaces                                {
-                                                            $$ = new Node(tline);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Tline);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(text);
-                                                            temp->value = new std::string(*$1);
-
-                                                            $$->productions.push_back(temp)
-                                                            $$->productions.push_back($2);
-
-                                                            delete temp; delete $2;    
-                                                        };
-          | APER ospaces                                {
-                                                            $$ = new Node(tline);
-                                                            $$->value = new std::string("");
-
-                                                            Node* temp = new Node(aper);
-                                                            temp->value = new std::string(*$1);
+                                                            Node* temp = new Node(Text);
+                                                            temp->setValue( new std::string(*$1));
 
                                                             $$->productions.push_back(temp);
                                                             $$->productions.push_back($2);
 
-                                                            delete temp; delete $2;  
+                                                             
+                                                        };
+          | APER ospaces                                {
+                                                            $$ = new Node(Tline);
+                                                           $$->setValue(new std::string(""));
+
+                                                            Node* temp = new Node(Aper);
+                                                            temp->setValue(new std::string("&"));
+
+                                                            $$->productions.push_back(temp);
+                                                            $$->productions.push_back($2);
+
+                                                              
                                                         };
           ;
 
     gdata :                                             {}
             | LSQRB gsentences RSQRB                    {
-                                                            $$ = new Node(gdata);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Gdata);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($2);
 
-                                                            delete temp; delete $2;      
+                                                                
                                                         };
 
-    codecontent :                                       {}
+    codecontent :                                       {
+                                                            $$ = new Node(Empty);
+                                                            $$->setValue(new std::string(""));
+                                                        }
                 | sentences codecontent                 {
-                                                            $$ = new Node(codecontent);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Codecontent);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);    
                                                             $$->productions.push_back($2);
 
-                                                            delete $1; delete $2;    
+                                                            
+                                                              
                                                         };
                 | symbols codecontent                   {
-                                                            $$ = new Node(codecontent);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Codecontent);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);    
                                                             $$->productions.push_back($2);
 
-                                                            delete $2; delete $1;
+                                                            
+                                                            
                                                         }
 
     symbols : LCURB                                     {
-                                                            $$ = new Node(symbols);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Symbols);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(lcurb);
-                                                            temp->value = new std::string("");
+                                                            Node* temp = new Node(Lcurb);
+                                                            temp->setValue(new std::string(""));
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete temp;
+                                                            
                                                         }
             | RCURB                                     {
                                                             
-                                                            $$ = new Node(symbols);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Symbols);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(rcurb);
-                                                            temp->value = new std::string("");
+                                                            Node* temp = new Node(Rcurb);
+                                                            temp->setValue(new std::string(""));
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete temp;
+                                                            
                                                         }
             | LSQRB                                     {
                 
-                                                            $$ = new Node(symbols);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Symbols);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(lsqrb);
-                                                            temp->value = new std::string("");
+                                                            Node* temp = new Node(Lsqrb);
+                                                            temp->setValue(new std::string(""));
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete temp;
+                                                            
                                                         }
             | RSQRB                                     {
-                                                            $$ = new Node(symbols);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Symbols);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(rsqrb);
-                                                            temp->value = new std::string("");
+                                                            Node* temp = new Node(Rsqrb);
+                                                            temp->setValue(new std::string(""));
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete temp;
+                                                            
                                                         }
             | APER                                      {
-                                                            $$ = new Node(symbols);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Symbols);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(aper);
-                                                            temp->value = new std::string("");
+                                                            Node* temp = new Node(Aper);
+                                                            temp->setValue(new std::string(""));
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete temp;
+                                                            
                                                         }
             | PIPE                                      {
-                                                            $$ = new Node(symbols);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Symbols);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(pipe);
-                                                            temp->value = new std::string("");
+                                                            Node* temp = new Node(Pipe);
+                                                            temp->setValue(new std::string(""));
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete temp;
+                                                            
                                                         }
             | BSLASH                                    {
-                                                            $$ = new Node(symbols);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Symbols);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(bslash);
-                                                            temp->value = new std::string("");
+                                                            Node* temp = new Node(Bslash);
+                                                            temp->setValue(new std::string(""));
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete temp;
+                                                            
                                                         }
-    startingtext : TEXT {}
+    startingtext : TEXT                                 {}
+                    | symbols                           {}
+                    | NEWLINE                           {}
 
     sentences : sentence                                {
-                                                            $$ = new Node(sentences);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Sentences);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
 
-                                                            delete $1;
+                                                            
                                                         };
                 | sentence sentences                    {
-                                                            $$ = new Node(sentences);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Sentences);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
                                                             $$->productions.push_back($2);
 
-                                                            delete $1; delete $2;
+                                                            
                                                         };
                 ;
 
     ospace : SPACE                                      {
-                                                            $$ = new Node(ospace);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Ospace);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(space);
-                                                            temp->value = new std::string(*$1);
+                                                            Node* temp = new Node(Space);
+                                                           temp->setValue(new std::string(*$1));
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete temp;
+                                                            
                                                         };
             | NEWLINE                                   {
-                                                            $$ = new Node(ospace);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Ospace);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(newline);
-                                                            temp->value = new std::string(*$1);
+                                                            Node* temp = new Node(Newline);
+                                                            temp->setValue(new std::string("\n"));
 
                                                             $$->productions.push_back(temp);
-                                                            delete temp;
+                                                            
                                                         };
             ;
 
     ospaces :                                           {};
             | ospaces ospace                            {
-                                                            $$ = new Node(ospaces);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Ospaces);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($2);
                                                             $$->productions.push_back($1);
 
-                                                            delete $1; delete $2;
+                                                            
                                                         };
             ;
 
     gsentences:                                         {}
                 | gsentences gsentence                  {
-                                                            $$ = new Node(gsentences);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Gsentences);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($2);
                                                             $$->productions.push_back($1);
 
-                                                            delete $1; delete $2;    
+                                                                
                                                         };
                 ;
     
     gsentence : BSLASH                                  {}
                 | sentence                              {
-                                                            $$ = new Node(gsentence);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Gsentence);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
 
-                                                            delete $1;
+                                                            
                                                         }
 
     sentence : TEXT                                     {
-                                                            $$ = new Node(sentence);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Sentence);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(text);
-                                                            temp->value = new std::string(*$1);
+                                                            Node* temp = new Node(Text);
+                                                            temp->setValue(new std::string(*$1));
 
                                                             $$->productions.push_back(temp);
 
-                                                            delete temp;
-    }
+                                                            
+                                                        }
              | ospace                                   {
-                                                            $$ = new Node(sentence);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Sentence);
+                                                           $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
 
-                                                            delete $1; 
+                                                            
                                                         }
              ;
 
     lsentences : NEWLINE optspace                       {
-                                                            $$ = new Node(sentence);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Lsentences);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(newline);
-                                                            temp->value = new std::string("\n");
+                                                            Node* temp = new Node(Newline);
+                                                            temp->setValue(new std::string("\n"));
 
                                                             $$->productions.push_back(temp);
                                                             $$->productions.push_back($2);
 
-                                                            delete temp; delete $2;
+                                                            
                                                         }
                 | SPACE lsentences                      {
-                                                            $$ = new Node(sentence);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Lsentences);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(space);
-                                                            temp->value = new std::string(*$1);
-
+                                                            Node* temp = new Node(Space);
+                                                            temp->setValue(new std::string(*$1));
                                                             $$->productions.push_back(temp);
                                                             $$->productions.push_back($2);
 
-                                                            delete temp; delete $2;
+                                                            
                                                         }
                 | TEXT lsentences                       {
-                                                            $$ = new Node(sentence);
-                                                            $$->value = new std::string("");
+                                                            $$ = new Node(Lsentences);
+                                                           $$->setValue(new std::string(""));
 
-                                                            Node* temp = new Node(test);
-                                                            temp->value = new std::string(*$1);
+                                                            Node* temp = new Node(Text);
+                                                            temp->setValue(new std::string(*$1));
 
                                                             $$->productions.push_back(temp);
                                                             $$->productions.push_back($2);
 
-                                                            delete temp; delete $2;
                                                         }
                 ;
     
-    optspace :                                          {}
+    optspace :                                          {
+                                                            $$ = new Node(Empty);
+                                                            $$->setValue(new std::string(""));
+                                                        }              
                | SPACE                                  {
-                                                            $$ = new Node(sentence);
-                                                            $$->value = new std::string("");
-
-                                                            Node* temp = new Node(newline);
-                                                            temp->value = new std::string("\n");
-
-                                                            $$->productions.push_back(temp);
-
-                                                            delete temp;
+                                                            $$ = new Node(Empty);
+                                                            $$->setValue(new std::string(""));
                                                         }
 
 %%
 
-std::string* getOutput(){
-        return outputStr; 
+Node* getRoot(){
+        return root; 
 }
 
 
