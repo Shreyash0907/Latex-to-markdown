@@ -10,7 +10,7 @@ NUMERIC             [0-9]
 BSLASH              \\
 SPACE               " "
 SCHAR               [\|\-]
-PUNCTUATION         [!\"#\$%\'()*+,\-./:;<=>?@^_`~]
+PUNCTUATION         [!\"#\%\'()*+,\-./:;<=>?@^_`~]
 WORD                (({ALPHABET}|{NUMERIC})+({ALPHABET}|{NUMERIC})*)
 TEXT                (({WORD}|{PUNCTUATION})+)
 LCURB               \{
@@ -19,6 +19,7 @@ APER                \&
 LSQRB               \[
 RSQRB               \]
 PIPE                "|"
+DOLLAR              "$"
 NEWLINE             "\n"
 TAB                 "\t"
 ITALIC              "textit"
@@ -41,6 +42,7 @@ UNOLIST             "itemize"
 OLIST               "enumerate"
 CBLOCK              "verbatim"
 ITEM                "item"
+SOUT                "sout"
 
 BTYPE               ({DOCUMENT}|{TABLE}|{UNOLIST}|{OLIST}|{CBLOCK})
 
@@ -57,6 +59,7 @@ BTYPE               ({DOCUMENT}|{TABLE}|{UNOLIST}|{OLIST}|{CBLOCK})
 {BSLASH}{GRAPHIC}                               {return GRAPHIC; };
 {BSLASH}{HLINE}                                 {return HLINE; };
 {BSLASH}{HREF}                                  {return HREF; };
+{BSLASH}{SOUT}                                  {return SOUT; };
 
 {BSLASH}{BEGIN}{LCURB}{OLIST}{RCURB}            {return BOLIST; };
 {BSLASH}{END}{LCURB}{OLIST}{RCURB}              {return EOLIST; };
@@ -68,6 +71,9 @@ BTYPE               ({DOCUMENT}|{TABLE}|{UNOLIST}|{OLIST}|{CBLOCK})
 {BSLASH}{END}{LCURB}{DOCUMENT}{RCURB}           {return EDOC; };
 {BSLASH}{BEGIN}{LCURB}{TABLE}{RCURB}            {return BTABLE; };
 {BSLASH}{END}{LCURB}{TABLE}{RCURB}              {return ETABLE; };
+{BSLASH}{LSQRB}                                 {return DMOPEN; };
+{BSLASH}{RSQRB}                                 {return DMEND; };
+{DOLLAR}                                        {return IMATH; };
 {LCURB}                                         {return LCURB; };
 {RCURB}                                         {return RCURB; };
 {LSQRB}                                         {return LSQRB; };
@@ -84,7 +90,8 @@ BTYPE               ({DOCUMENT}|{TABLE}|{UNOLIST}|{OLIST}|{CBLOCK})
                                                     yylval.str = new std::string(yytext);
                                                     return TEXT;
                                                 };
-.                                               {return yytext[0]; };
+.                                               {printf("hrere");return yytext[0]; };
+
 
 %%
 int yywrap(){

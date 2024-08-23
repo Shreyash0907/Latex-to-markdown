@@ -96,6 +96,21 @@ void Node::convert2Markdown() {
         this->productions[0]->convert2Markdown();
         this->setValue(new std::string("**" + *(this->productions[0]->value) + "**"));
         break;
+    
+    case Sout:
+        this->productions[0]->convert2Markdown();
+        this->setValue(new std::string("~~" + *(this->productions[0]->value) + "~~"));
+        break;
+
+    case Imath:
+        this->productions[0]->convert2Markdown();
+        this->setValue(new std::string("$" + *(this->productions[0]->value) + "$"));
+        break;
+
+    case Dmath:
+        this->productions[0]->convert2Markdown();
+        this->setValue(new std::string("$$" + *(this->productions[0]->value) + "$$"));
+        break;
 
     case Italic:
         this->productions[0]->convert2Markdown();
@@ -206,14 +221,13 @@ void Node::convert2Markdown() {
         break;
     
     case Oitem:
-        // printf("int oitem");
         this->productions[0]->convert2Markdown();
         this->productions[1]->convert2Markdown();
         if(this->productions[0]->getType() == Lsentences){
             for(int i = 1 ; i < this->depth ; i++){
                 this->setValue(new std::string(*(this->value) + "   "));
             }
-            this->setValue(new std::string(*(this->value) + "1. " + *(this->productions[0]->value) + *(this->productions[1]->value)));
+            this->setValue(new std::string(*(this->value) + "1." + *(this->productions[0]->value) + *(this->productions[1]->value)));
         }else{
             this->setValue(new std::string(*(this->productions[0]->value) + *(this->productions[1]->value)));
         }
@@ -226,10 +240,68 @@ void Node::convert2Markdown() {
             for(int i = 1 ; i < this->depth ; i++){
                 this->setValue(new std::string(*(this->value) + "   "));
             }
-            this->setValue(new std::string(*(this->value) + "- " + *(this->productions[0]->value) + *(this->productions[1]->value)));
+            this->setValue(new std::string(*(this->value) + "-" + *(this->productions[0]->value) + *(this->productions[1]->value)));
         }else{
             this->setValue(new std::string(*(this->productions[0]->value) + *(this->productions[1]->value)));
         }
+        break;
+
+    case Tcontent:
+        this->productions[0]->convert2Markdown();
+        this->productions[1]->convert2Markdown();
+       
+        if(this->productions[1]->getType() == Tlines){
+            this->setValue(new std::string(*(this->productions[0]->value) + "| " +  *(this->productions[1]->value) + "|\n"));
+            if(this->rownum == 1){
+                std::string* temp = new std::string("");
+                for(int i = this->tstruct.size()-1 ; i >= 0; i--){
+                    if(this->tstruct[i] == "l"){
+                        temp = new std::string(*temp + "| :--- ");
+                    }else if(this->tstruct[i] == "r"){
+                        temp = new std::string(*temp + "| ---: ");
+                    }else{
+                        temp = new std::string(*temp + "| :---: ");
+                    }
+                    
+                }
+                temp = new std::string(*temp + "|\n");
+                this->setValue(new std::string(*(this->value) + *temp));
+            }
+        }else{
+             this->setValue(new std::string(*(this->productions[0]->value) ));
+        }
+        break;
+
+    case Tlines:
+        if(static_cast<int>(this->productions.size()) == 2){
+            this->productions[0]->convert2Markdown();
+            this->productions[1]->convert2Markdown();
+            this->setValue(new std::string(*(this->productions[0]->value) + *(this->productions[1]->value)));
+            
+        }else{
+            this->productions[0]->convert2Markdown();
+            this->setValue(new std::string(*(this->productions[0]->value)));
+        }
+        break;
+
+    case Tline:
+        this->productions[0]->convert2Markdown();
+        this->productions[1]->convert2Markdown();
+        if(this->productions[0]->getType() == Text){
+            this->setValue(new std::string(*(this->productions[0]->value) + *(this->productions[1]->value)));
+        }else{
+            this->setValue(new std::string(" | " + *(this->productions[1]->value)));
+        }
+        break;
+
+
+    case Hline:
+        this->setValue(new std::string(""));
+        break;
+
+    case Table:
+        this->productions[0]->convert2Markdown();
+        this->setValue(new std::string(*(this->productions[0]->value)));
         break;
 
     default:

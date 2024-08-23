@@ -9,6 +9,7 @@
     int cnt = 0;
     int tcol = 0;
     int trow = 0;
+    std::vector<std::string> tstr;
 %}
 
 %code requires {
@@ -36,7 +37,7 @@
 %token OTHER
 %token LCURB RCURB APER TAB BSLASH PIPE NEWLINE LSQRB RSQRB
 %token <str> TEXT SPACE
-%token ITALIC BOLD HREF GRAPHIC
+%token ITALIC BOLD HREF GRAPHIC DMOPEN DMEND IMATH SOUT
 %token HRULE SECTION PARAGRAPH ITEM SUBSECTION SUBSUBSECTION HLINE
 %token BCBLOCK ECBLOCK
 %token BOLIST EOLIST BUNOLIST EUNOLIST
@@ -119,19 +120,28 @@
                                                            
                                                         }
 
-    list :  BUNOLIST unoitem EUNOLIST NEWLINE           {
+    list :  BUNOLIST depthI unoitem EUNOLIST depthD NEWLINE           {
                                                             $$ = new Node(List);
                                                             $$->setValue(new std::string(""));
-                                                            $$->productions.push_back($2);
+                                                            $$->productions.push_back($3);
 
                                                             
                                                         }
-           | BOLIST oitem EOLIST NEWLINE                {
+           | BOLIST depthI oitem EOLIST depthD NEWLINE  {
                                                             $$ = new Node(List);
                                                             $$->setValue(new std::string(""));                                              
-                                                            $$->productions.push_back($2);
+                                                            $$->productions.push_back($3);
                                                             
                                                         }
+           | DMOPEN sentences DMEND      {
+                                                            $$ = new Node(Dmath);
+                                                            $$->setValue(new std::string(""));                                              
+                                                            $$->productions.push_back($2);
+                                                        }
+            ;
+
+    depthD : {cnt--;}
+    depthI : {cnt++;}
 
     operationList: operations                           {
                                                             $$ = new Node(Operationlist);
@@ -252,7 +262,26 @@
 
                                                             $$->productions.push_back(temp);
 
-                                                           
+                                                        }
+              | SOUT ostatement                         {
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
+
+                                                            Node* temp = new Node(Sout);
+                                                           temp->setValue(new std::string(""));
+                                                            temp->productions.push_back($2);
+
+                                                            $$->productions.push_back(temp);
+                                                        }
+               | IMATH sentences IMATH                  {
+                                                            $$ = new Node(Operations);
+                                                            $$->setValue(new std::string(""));
+
+                                                            Node* temp = new Node(Imath);
+                                                           temp->setValue(new std::string(""));
+                                                            temp->productions.push_back($2);
+
+                                                            $$->productions.push_back(temp);
                                                         }
               ;
 
@@ -286,10 +315,11 @@
 
                                                             
                                                         };
-            | list unoitem                              {   printf("last --------");
+            | list unoitem                              {   
                                                             $$ = new Node(Unoitem);
                                                             $$->setValue(new std::string(""));
-                                                            
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
                                                         
                                                         }
             ;
@@ -317,10 +347,10 @@
             ;
 
     tstructure :                                        {
-                                                            $$ = new Node(Tstructure);
+                                                            $$ = new Node(Empty);
                                                             $$->setValue(new std::string(""));
                                                         }
-                | PIPE tstructure                        {
+                | PIPE tstructure                       {
                                                             $$ = new Node(Tstructure);
                                                             $$->setValue(new std::string(""));
 
@@ -334,10 +364,12 @@
                                                         };
                | TEXT tstructure                        {
                                                             $$ = new Node(Tstructure);
-                                                           $$->setValue(new std::string(""));
+                                                            $$->setValue(new std::string(""));
 
                                                             Node* temp = new Node(Text);
                                                             temp->setValue( new std::string(*$1));
+                                                            std::string st = *(temp->getValue());
+                                                            tstr.push_back(st);
 
                                                             $$->productions.push_back(temp);
                                                             $$->productions.push_back($2);  
@@ -347,26 +379,28 @@
                 ;
                
     tcontent :                                          {
-                                                            $$ = new Node(Tcontent);
+                                                            $$ = new Node(Empty);
                                                            $$->setValue(new std::string(""));
                                                         }
              | tcontent tlines BSLASH BSLASH ospaces     {
-                                                           /* trow++;
-                                                            string* temp = new std::string( *$1 + "| " + *$2 + "|\n" );
-                                                            if(trow == 1){
-                                                                for(int i = 0 ; i < tcol; i++){
-                                                                    temp = new std::string(*temp + "| ----- ");
-                                                                }
-                                                                temp = new std::string(*temp + "|\n");
-                                                            }
-                                                            $$ = temp;*/
+
+                                                            trow++;
+                                                            $$ = new Node(Tcontent);
+                                                            $$->setValue(new std::string(""));
+                                                            $$->rownum = trow;
+                                                            $$->tstruct = tstr;
+
+                                                            $$->productions.push_back($1);
+                                                            $$->productions.push_back($2);
+
                                                         }
              | tcontent HLINE ospaces                   {
                                                             $$ = new Node(Tcontent);
                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
 
-                                                            
+                                                            Node* temp = new Node(Hline);
+                                                            $$->productions.push_back(temp);
                                                         }
             ;
 
@@ -374,7 +408,6 @@
                                                             $$ = new Node(Tlines);
                                                            $$->setValue(new std::string(""));
                                                             $$->productions.push_back($1);
-
                                                             
                                                         };
            | tline tlines                               {
@@ -568,7 +601,10 @@
                                                         };
             ;
 
-    ospaces :                                           {};
+    ospaces :                                           {
+                                                            $$ = new Node(Empty);
+                                                            $$->setValue(new std::string(""));
+                                                        };
             | ospaces ospace                            {
                                                             $$ = new Node(Ospaces);
                                                            $$->setValue(new std::string(""));
@@ -673,5 +709,5 @@ Node* getRoot(){
 
 void yyerror(const char *s){
     extern char *yytext;
-    fprintf(stderr, "Error: %s at line near token '%s'\n", s, yytext);
+    fprintf(stderr, "Error: %s at line token '%s'\n", s, yytext);
 }

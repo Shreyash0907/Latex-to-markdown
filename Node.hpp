@@ -52,7 +52,11 @@ enum symbol {
     Pipe,
     Bslash,
     Code,
-    Empty
+    Empty,
+    Hline,
+    Dmath,
+    Sout,
+    Imath,
 };
 
 class Node{
@@ -63,7 +67,9 @@ class Node{
         
     public:
         std::vector< Node* > productions;
+        std::vector<std::string> tstruct;
         int depth;
+        int rownum;
         symbol getType(){
             return type;
         }
@@ -75,7 +81,7 @@ class Node{
             return value;
         }
 
-        Node(symbol val) : type(val) {}
+        Node(symbol val) : type(val) {};
 
         void convert2Markdown();
 };

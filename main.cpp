@@ -40,7 +40,7 @@ int main(int argc, char* argv[]){
 
     yyin = inputPtr;
 
-    string* convertedStr;
+
     yyparse();
 
     Node* temp = getRoot();
