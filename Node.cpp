@@ -1,5 +1,190 @@
+/**
+ * @file Node.cpp
+ * @author Shreyash Chikte (shreyashsc9@gmail.com)
+ * @brief Funcion implementation for class Node
+ * @version 0.1
+ * @date 2024-08-24
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
 #include "Node.hpp"
 
+
+/**
+     * @brief Prints the Abstract syntax tree depth wise.
+     * 
+     * @param type The type of the node is passed.
+     * @return Function doesn't return any value.
+*/
+std::string getEnumValue(symbol type){
+    switch(type){
+
+        case Operations :
+            return "Operation_Node";
+            break;
+        case Unoitem:
+            return "Unoitem_Node";
+            break;
+        case Gsentence:
+            return "Gsentence_Node";
+            break;
+        case Gsentences:
+            return "Gsentences_Node";
+            break;
+        case Oitem:
+            return "Oitem_Node";
+            break;
+        case Gdata:
+            return "Gdata_Node";
+            break;
+        case Sentence:
+            return "Sentence_Node";
+            break;
+        case Sentences:
+            return "Sentences_Node";
+            break;
+        case Ospace:
+            return "Ospace_Node";
+            break;
+        case Ospaces:
+            return "Ospaces_Node";
+            break;
+        case Tcontent:
+            return "Tcontent_Node";
+            break;
+        case Tstructure:
+            return "Tstructure_Node";
+            break;
+        case Tline:
+            return "Tline_Node";
+            break;
+        case Tlines:
+            return "Tlines_Node";
+            break;
+        case Lsentences:
+            return "Lsentences_Node";
+            break;
+        case Symbols:
+            return "Symbold_Node";
+            break;
+        case List:
+            return "List_Node";
+            break;
+        case Codecontent:
+            return "Codecontent_Node";
+            break;
+        case Start:
+            return "Start_Node";
+            break;
+        case Program:
+            return "Program_Node";
+            break;
+        case Blocks:
+            return "Blocks_Node";
+            break;
+        case Operationlist:
+            return "Operationlist_Node";
+            break;
+        case Ostatement:
+            return "Ostatement_Node";
+            break;
+        case Table:
+            return "Table_Node";
+            break;
+        case Thead:
+            return "Thead";
+            break;
+        case Url:
+            return "Url_Node";
+            break;
+        case Text:
+            return "Text_Node";
+            break;
+        case Space:
+            return "Space_Node";
+            break;
+        case Newline:
+            return "Newline_Node";
+            break;
+        case Italic:
+            return "Italic_Node";
+            break;
+        case Bold:
+            return "Bold_Node";
+            break;
+        case Section:
+            return "Section_Node";
+            break;
+        case Subsection:
+            return "Subsection_Node";
+            break;
+        case Subsubsection:
+            return "Subsubsection_Node";
+            break;
+        case Href:
+            return "Href_Node";
+            break;
+        case Hrule:
+            return "Hrule_Node";
+            break;
+        case Graphic:
+            return "Graphic_Node";
+            break;
+        case Paragraph:
+            return "Paragraph_Node";
+            break;
+        case Lcurb:
+            return "Left curly bracket Node";
+            break;
+        case Rcurb:
+            return "Right curly bracket Node";
+            break;
+        case Lsqrb:
+            return "Left square bracket Node";
+            break;
+        case Rsqrb:
+            return "Right square bracket Node";
+            break;
+        case Aper:
+            return "Ampersand_Node";
+            break;
+        case Pipe:
+            return "Pipe_Node";
+            break;
+        case Bslash:
+            return "Back Slash Node";
+            break;
+        case Code:
+            return "Code_Node";
+            break;
+        case Empty:
+            return "Empty_Node";
+            break;
+        case Hline:
+            return "Hline_Node";
+            break;
+        case Dmath:
+            return "Display Math Node";
+            break;
+        case Sout:
+            return "Strike Through Node";
+            break;
+        case Imath:
+            return "Inline math Node";
+            break;
+        default:
+            return "Unexpected_Node";
+            break;
+    }
+}
+/**
+     * @brief Prints the Abstract syntax tree depth wise.
+     * It converts the node value to markdown language.
+     * It takes the type of the node as the value and based on that the conversion is done
+     * 
+     * @return Function doesn't return any value.
+*/
 void Node::convert2Markdown() {
 
     switch (this->type)
@@ -68,7 +253,7 @@ void Node::convert2Markdown() {
         break;
 
     case Hrule:
-        this->setValue(new std::string("----"));
+        this->setValue(new std::string("\n----"));
         break;
 
     case Href:
@@ -307,4 +492,28 @@ void Node::convert2Markdown() {
     default:
         break;
     }
+}
+
+
+/**
+     * @brief Prints the Abstract syntax tree depth wise.
+     * 
+     * @param node The node which type will be printed.
+     * @param depth The depth at which the current node is present.
+*/
+void Node::printAST(Node* node, int depth, std::ofstream& astPointer){
+    if(node->productions.size() == 2){
+        for(int i = 0 ; i < depth; i++){
+            astPointer << " ";
+        }
+        astPointer << getEnumValue(node->getType()) << "\n";
+        printAST(node->productions[0], depth + 1, astPointer);
+        printAST(node->productions[1], depth + 1,astPointer);
+    }else if(node->productions.size() == 1){
+        for(int i = 0 ; i < depth; i++){
+            astPointer << " ";
+        }
+        astPointer << getEnumValue(node->getType()) << "\n";
+        printAST(node->productions[0], depth + 1,astPointer);
+    }   
 }
