@@ -74,6 +74,8 @@ enum symbol {
     Imath,
 };
 
+
+std::string getEnumValue(symbol type);
 /**
  * @brief Represents a structure of the node in the AST.
  * 

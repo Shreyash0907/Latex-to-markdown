@@ -88,6 +88,27 @@ TEST(Latex2Markdown, codeContentCheck) {
     EXPECT_STREQ(getMarkdown(temp).c_str(), "def iit_delhi_info():\n    print(\"Welcome to IIT Delhi!\")\n");
 }
 
+TEST(Latex2Markdown, convert2Markdown){
+    Node *temp = new Node(Bold);
+    temp->setValue(new std::string(""));
+    
+    Node *temp1 = new Node(Text);
+    temp1->setValue(new std::string("This is Astitva here, aaj mere taraf se party."));
+
+    temp->productions.push_back(temp1);
+
+    temp->convert2Markdown();
+    
+    std::string result = "**This is Astitva here, aaj mere taraf se party.**";
+    EXPECT_EQ(temp->getValue()->c_str() , result);
+}
+
+TEST(Latex2Markdown, getEnum){
+    Node *temp = new Node(Italic);
+    temp->setValue(new std::string(""));
+
+    EXPECT_EQ(getEnumValue(temp->getType()) , "Italic_Node");
+}
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
